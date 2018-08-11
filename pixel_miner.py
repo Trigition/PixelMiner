@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from queue import Queue
+import sys
+
+is_py2 = sys.version_info < (3, 0)
+
+if is_py2:
+    from Queue import Queue
+else:
+    from queue import Queue
 from threading import Thread
 import os
 import colorlog
