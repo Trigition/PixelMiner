@@ -19,9 +19,7 @@ def download_image(url, filepath):
         if filepath[-1] != '/':
             filepath += '/'
 
-        logging.info('Downloading: ' + url + ' -> ' + filepath)
         wget.download(url, filepath + filename, bar=lambda current, total, width: None)
-        logging.info('Finished: ' + url)
         return filename
 
     return None

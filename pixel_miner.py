@@ -3,20 +3,22 @@
 from queue import Queue
 from threading import Thread
 import os
-import logging
+import colorlog
 from downloaders import download_image
 
 class Worker(Thread):
 
     """A worker"""
 
-    def __init__(self, tasks):
+    def __init__(self, tasks, worker_name='Worker'):
         """Initializes an asynchronous worker
 
         :tasks: TODO
 
         """
         Thread.__init__(self)
+
+        self.logger = colorlog.getLogger(worker_name)
 
         self.tasks = tasks
         self.daemon = True
@@ -26,9 +28,10 @@ class Worker(Thread):
         while True:
             func, args, kwargs = self.tasks.get()
             try:
+                self.logger.info('Downloading: ' + args[0])
                 func(*args, **kwargs)
             except Exception as e:
-                print(e)
+                self.logger.warning('Encountered error: ' + str(e))
             finally:
                 self.tasks.task_done()
 
@@ -42,9 +45,16 @@ class PixelMiner():
         :n_concurrent: The number of concurrent downloads
 
         """
+        colorlog.basicConfig(level='INFO')
+
+        handler = colorlog.StreamHandler()
+        handler.setFormatter(colorlog.ColoredFormatter('%(log_color)s%(levelname)s:%(name)s:%(message)s'))
+        self.logger = colorlog.getLogger('PixelMiner')
+        #self.logger.addHandler(handler)
+
         self.tasks = Queue(n_concurrent)
-        for _ in range(n_concurrent):
-            Worker(self.tasks)
+        for n in range(n_concurrent):
+            Worker(self.tasks, worker_name='Worker %d' % n)
 
         if not isinstance(subreddits, list):
             subreddits = [subreddits]
@@ -56,7 +66,7 @@ class PixelMiner():
 
     def add_url(self, url, subreddit):
         filepath = 'images/' + subreddit
-        logging.info('Queuing: ' + url + ' from ' + subreddit)
+        self.logger.info('Queuing: ' + url + ' from ' + subreddit)
         self.add_task(download_image, url, filepath)
 
     def add_task(self, func, *args, **kwargs):
